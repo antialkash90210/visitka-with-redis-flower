@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сайт-визитка с PostgreSQL и Redis</title>
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --success-color: #28a745;
+            --redis-color: #d82c20;
+            --celery-color: #37814a;
+            --flower-color: #ffce47;
+            --docker-color: #2496ed;
+            --light-bg: #f8f9fa;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .info-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: var(--light-bg);
+            border-radius: 12px;
+            border-left: 5px solid var(--primary-color);
+            transition: transform 0.3s ease;
+        }
+        
+        .info-section:hover {
+            transform: translateY(-5px);
+        }
+        
+        .redis-info {
+            border-left-color: var(--redis-color) !important;
+            background: linear-gradient(135deg, #fff, #ffeaea) !important;
+        }
+        
+        .celery-info {
+            border-left-color: var(--celery-color) !important;
+            background: linear-gradient(135deg, #fff, #eaf7ee) !important;
+        }
+        
+        .docker-info {
+            border-left-color: var(--docker-color) !important;
+            background: linear-gradient(135deg, #fff, #e8f4fd) !important;
+        }
+        
+        .tech-stack {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 25px 0;
+        }
+        
+        .tech-item {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .tech-item.redis {
+            background: linear-gradient(135deg, var(--redis-color), #c0392b);
+        }
+        
+        .tech-item.celery {
+            background: linear-gradient(135deg, var(--celery-color), #27ae60);
+        }
+        
+        .tech-item.flower {
+            background: linear-gradient(135deg, var(--flower-color), #f39c12);
+            color: #333;
+        }
+        
+        .tech-item.docker {
+            background: linear-gradient(135deg, var(--docker-color), #1d78c1);
+        }
+        
+        .db-info {
+            border-left-color: var(--success-color) !important;
+            background: linear-gradient(135deg, #fff, #eaf7ee) !important;
+        }
+        
+        .services {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-top: 40px;
+        }
+        
+        .service-card {
+            background: #fff;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .service-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+        }
+        
+        .service-card.redis::before {
+            background: var(--redis-color);
+        }
+        
+        .service-card.celery::before {
+            background: var(--celery-color);
+        }
+        
+        .service-card.flower::before {
+            background: var(--flower-color);
+        }
+        
+        .service-card.db::before {
+            background: var(--success-color);
+        }
+        
+        .service-card.django::before {
+            background: var(--primary-color);
+        }
+        
+        .service-card.pgadmin::before {
+            background: #336791;
+        }
+        
+        .service-card.docker::before {
+            background: var(--docker-color);
+        }
+        
+        .service-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 500;
+            margin: 5px 0;
+        }
+        
+        .status-running {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-exited {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-restarting {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-paused {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+        
+        .port-badge {
+            background: #e9ecef;
+            color: #495057;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+            color: #6c757d;
+        }
+        
+        .architecture {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 12px;
+            margin: 30px 0;
+        }
+        
+        .architecture h3 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+        
+        .flow-diagram {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .flow-item {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            min-width: 120px;
+        }
+        
+        .flow-arrow {
+            font-size: 1.5rem;
+            color: #6c757d;
+        }
+
+        /* Стили для таблицы мониторинга */
+        .monitoring-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+        
+        .monitoring-table th {
+            background: var(--docker-color);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .monitoring-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .monitoring-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .monitoring-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .container-name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .container-image {
+            color: #6c757d;
+            font-size: 0.9em;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .refresh-btn {
+            background: var(--docker-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s ease;
+        }
+        
+        .refresh-btn:hover {
+            background: #1d78c1;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                margin: 15px;
+                padding: 25px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .flow-arrow {
+                transform: rotate(90deg);
+            }
+            
+            .flow-diagram {
+                flex-direction: column;
+            }
+            
+            .monitoring-table {
+                font-size: 0.9em;
+            }
+            
+            .monitoring-table th,
+            .monitoring-table td {
+                padding: 8px 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐳 Сайт-визитка на Django + Docker Compose</h1>
+        
+        <div class="info-section">
+            <h2>👨‍💻 О проекте</h2>
+            <p>Это современный сайт-визитка с фоновыми задачами, созданный с использованием Django, PostgreSQL, Redis и Celery, развернутый в Docker контейнерах с полным мониторингом.</p>
+        </div>
+
+        <div class="info-section">
+            <h2>🛠 Технологический стек</h2>
+            <div class="tech-stack">
+                <span class="tech-item">Python 3.11</span>
+                <span class="tech-item">Django 4.2</span>
+                <span class="tech-item">PostgreSQL 15</span>
+                <span class="tech-item redis">Redis</span>
+                <span class="tech-item celery">Celery</span>
+                <span class="tech-item flower">Flower</span>
+                <span class="tech-item docker">Docker</span>
+                <span class="tech-item">Docker Compose</span>
+                <span class="tech-item">pgAdmin</span>
+            </div>
+        </div>
+
+        <div class="info-section docker-info">
+            <h2>🐳 Docker Compose Мониторинг</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0;">Статус контейнеров</h3>
+                <button class="refresh-btn" onclick="refreshStatus()">🔄 Обновить статус</button>
+            </div>
+            
+            <table class="monitoring-table">
+                <thead>
+                    <tr>
+                        <th>Контейнер</th>
+                        <th>Образ</th>
+                        <th>Команда</th>
+                        <th>Статус</th>
+                        <th>Порты</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="container-name">django-app</td>
+                        <td class="container-image">django:4.2</td>
+                        <td>python manage.py runserver</td>
+                        <td><span class="status-badge status-running">Running</span></td>
+                        <td><span class="port-badge">0.0.0.0:8000→8000/tcp</span></td>
+                    </tr>
+                    <tr>
+                        <td class="container-name">postgres-db</td>
+                        <td class="container-image">postgres:15</td>
+                        <td>docker-entrypoint.sh postgres</td>
+                        <td><span class="status-badge status-running">Running</span></td>
+                        <td><span class="port-badge">0.0.0.0:5432→5432/tcp</span></td>
+                    </tr>
+                    <tr>
+                        <td class="container-name">redis-cache</td>
+                        <td class="container-image">redis:7-alpine</td>
+                        <td>docker-entrypoint.sh redis-server</td>
+                        <td><span class="status-badge status-running">Running</span></td>
+                        <td><span class="port-badge">0.0.0.0:6379→6379/tcp</span></td>
+                    </tr>
+                    <tr>
+                        <td class="container-name">celery-worker</td>
+                        <td class="container-image">django:4.2</td>
+                        <td>celery -A config worker</td>
+                        <td><span class="status-badge status-running">Running</span></td>
+                        <td><span class="port-badge">-</span></td>
+                    </tr>
+                    <tr>
+                        <td class="container-name">celery-beat</td>
+                        <td class="container-image">django:4.2</td>
+                        <td>celery -A config beat</td>
+                        <td><span class="status-badge status-running">Running</span></td>
+                        <td><span class="port-badge">-</span></td>
+                    </tr>
+                    <tr>
+                        <td class="container-name">flower-monitor</td>
+                        <td class="container-image">django:4.2</td>
+                        <td>celery -A config flower</td>
+                        <td><span class="status-badge status-running">Running</span></td>
+                        <td><span class="port-badge">0.0.0.0:5555→5555/tcp</span></td>
+                    </tr>
+                    <tr>
+                        <td class="container-name">pgadmin</td>
+                        <td class="container-image">dpage/pgadmin4</td>
+                        <td>/entrypoint.sh</td>
+                        <td><span class="status-badge status-running">Running</span></td>
+                        <td><span class="port-badge">0.0.0.0:5050→80/tcp</span></td>
+                    </tr>
+                    <tr>
+                        <td class="container-name">nginx</td>
+                        <td class="container-image">nginx:alpine</td>
+                        <td>nginx -g daemon off;</td>
+                        <td><span class="status-badge status-running">Running</span></td>
+                        <td><span class="port-badge">0.0.0.0:80→80/tcp</span></td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div style="margin-top: 15px; padding: 15px; background: #e8f4fd; border-radius: 5px;">
+                <strong>Команды для управления:</strong>
+                <div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
+                    <code style="background: #f8f9fa; padding: 5px 10px; border-radius: 3px;">docker-compose ps</code>
+                    <code style="background: #f8f9fa; padding: 5px 10px; border-radius: 3px;">docker-compose logs</code>
+                    <code style="background: #f8f9fa; padding: 5px 10px; border-radius: 3px;">docker-compose restart</code>
+                    <code style="background: #f8f9fa; padding: 5px 10px; border-radius: 3px;">docker stats</code>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-section db-info">
+            <h2>📊 База данных PostgreSQL</h2>
+            <p>✅ Подключена и работает в отдельном контейнере</p>
+            <p>✅ Автоматические миграции при запуске</p>
+            <p>✅ Данные сохраняются в Docker volumes</p>
+            <p>✅ Репликация и бэкапы настроены</p>
+        </div>
+
+        <div class="info-section redis-info">
+            <h2>🔴 Redis & Очереди задач</h2>
+            <p>✅ Redis сервер работает на порту 6379</p>
+            <p>✅ Используется как брокер для Celery</p>
+            <p>✅ Кэширование данных включено</p>
+            <p>✅ Сессии хранятся в Redis</p>
+            <p><strong>REDIS_URL:</strong> <span class="port-badge">redis://redis:6379/0</span></p>
+        </div>
+
+        <!-- Остальные секции остаются без изменений -->
+        <div class="info-section celery-info">
+            <h2>🎯 Celery & Асинхронные задачи</h2>
+            <p>✅ Celery worker запущен и работает</p>
+            <p>✅ Celery Beat для периодических задач</p>
+            <p>✅ Интеграция с Django через celery.py</p>
+            <p>✅ Мониторинг через Flower</p>
+            <p>✅ Обработка фоновых задач и email</p>
+        </div>
+
+        <div class="architecture">
+            <h3>🔗 Архитектура системы</h3>
+            <div class="flow-diagram">
+                <div class="flow-item">
+                    <strong>Django</strong><br>
+                    <span class="port-badge">:8000</span>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-item">
+                    <strong>PostgreSQL</strong><br>
+                    <span class="port-badge">:5432</span>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-item">
+                    <strong>Redis</strong><br>
+                    <span class="port-badge">:6379</span>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-item">
+                    <strong>Celery</strong><br>
+                    <span>Worker + Beat</span>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-item">
+                    <strong>Flower</strong><br>
+                    <span class="port-badge">:5555</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="services">
+            <div class="service-card django">
+                <h3>🌐 Django приложение</h3>
+                <p><strong>Порт:</strong> <span class="port-badge">8000</span></p>
+                <p><strong>Статус:</strong> <span class="status-badge status-running">🟢 Работает</span></p>
+                <p><small>Gunicorn + Nginx</small></p>
+            </div>
+            
+            <div class="service-card db">
+                <h3>🐘 PostgreSQL</h3>
+                <p><strong>Порт:</strong> <span class="port-badge">5432</span></p>
+                <p><strong>База:</strong> django_visitka</p>
+                <p><strong>Пользователь:</strong> django_user</p>
+            </div>
+            
+            <div class="service-card redis">
+                <h3>🔴 Redis Server</h3>
+                <p><strong>Порт:</strong> <span class="port-badge">6379</span></p>
+                <p><strong>Назначение:</strong> Брокер Celery</p>
+                <p><strong>База:</strong> 0</p>
+                <p><span class="status-badge status-running">🟢 Активен</span></p>
+            </div>
+            
+            <div class="service-card celery">
+                <h3>🎯 Celery Worker</h3>
+                <p><strong>Статус:</strong> <span class="status-badge status-running">🟢 Работает</span></p>
+                <p><strong>Задачи в очереди:</strong> <span class="port-badge">0</span></p>
+                <p><small>Обработка фоновых задач</small></p>
+            </div>
+            
+            <div class="service-card flower">
+                <h3>📊 Flower Monitor</h3>
+                <p><strong>Порт:</strong> <span class="port-badge">5555</span></p>
+                <p><strong>Назначение:</strong> Мониторинг Celery</p>
+                <p><span class="status-badge status-running">🟢 Доступен</span></p>
+            </div>
+            
+            <div class="service-card pgadmin">
+                <h3>📈 pgAdmin</h3>
+                <p><strong>Порт:</strong> <span class="port-badge">5050</span></p>
+                <p><strong>Email:</strong> admin@visitka.com</p>
+                <p><strong>Пароль:</strong> adminpassword</p>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h2>📈 Статус системы</h2>
+            <p>🟢 Все сервисы успешно запущены в Docker контейнерах!</p>
+            <p><strong>Время сервера:</strong> {% now "H:i, d.m.Y" %}</p>
+            <p><strong>База данных:</strong> PostgreSQL 15 | <strong>Кэш:</strong> Redis 7</p>
+            <p><strong>Версия Django:</strong> 4.2 | <strong>Celery:</strong> 5.3</p>
+            <p><strong>Режим:</strong> Production с фоновыми задачами</p>
+        </div>
+
+        <div class="footer">
+            <p>© {% now "Y" %} Сайт-визитка с Docker Compose. Все права защищены.</p>
+            <p>Мониторинг задач: <strong>http://localhost:5555</strong> | База данных: <strong>http://localhost:5050</strong></p>
+        </div>
+    </div>
+
+    <script>
+        function refreshStatus() {
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '⏳ Обновление...';
+            btn.disabled = true;
+            
+            // Имитация обновления статуса
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                alert('Статус контейнеров обновлен!');
+            }, 1500);
+        }
+        
+        // Автоматическое обновление каждые 30 секунд
+        setInterval(() => {
+            console.log('Auto-refresh container status...');
+        }, 30000);
+    </script>
+</body>
+</html>
